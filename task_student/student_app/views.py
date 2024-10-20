@@ -233,7 +233,7 @@ class StudentAvg(APIView):
     def perfromace_of_teacher(self,request):
         '''
         view to get the performance of teachers  in percentage according to total students and passed students scored by students
-        Use Postman to test this API at the following URL:
+        Use Postman to test this API at the following URL:http://127.0.0.1:8000/perfomance/
         '''
         try:
             students = Student_Task.objects.all()
