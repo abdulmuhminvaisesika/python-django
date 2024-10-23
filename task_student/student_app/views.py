@@ -12,9 +12,9 @@ from django.http import Http404
 
 
 
-from .models import Student_Task
-from .serializers import StudentTaskSerializer
-from utils.utils import format_students_data,calculate_average, group_students_by_teacher, filter_failed_students
+from .models import Student_Task,Teacher_Task
+from .serializers import StudentTaskSerializer, TeacherTaskSerializer
+from utils.utils import calculate_average, calculate_performance
 
 
 
@@ -23,39 +23,70 @@ class Crud_All_Student(APIView):
     def post(self, request):
         '''
         Handle the POST request to create new student tasks.
-        Use Postman to test this API at the following URL: http://127.0.0.1:8000/add/
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/crud/
         '''
-        # Set `many=True` to handle a list of dictionaries (multiple students)
-        serializer = StudentTaskSerializer(data=request.data, many=True)
+        try:
+            serializer = StudentTaskSerializer(data=request.data, many=True)
+
+            if serializer.is_valid():
+                students = serializer.save()  
+                
+                # After saving students, calculate and update teacher performance
+                for student in students:
+                    if student.teacher_id:  # Check if teacher_id is set
+                        # Calculate the performance based on the updated student records
+                        performance = calculate_performance(Student_Task.objects.filter(teacher_id=student.teacher_id))
+
+                        # Update the teacher's performance directly
+                        Teacher_Task.objects.filter(employee_id=student.teacher_id.employee_id).update(perfomance=performance)
+
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self, request):
         '''
         Handle the GET request to retrieve all student tasks.
-        Use Postman to test this API at the following URL: http://127.0.0.1:8000/list/
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/crud/
         '''
-        # Directly handle GET logic here
-        students = Student_Task.objects.all()
-        serializer = StudentTaskSerializer(students, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            students = Student_Task.objects.all()
+            serializer = StudentTaskSerializer(students, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request):
         '''
         Handle the DELETE request to delete all existing student tasks.
-        Use Postman to test this API at the following URL: http://127.0.0.1:8000/delete/
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/crud/
         '''
-        # Directly handle DELETE logic here
-        Student_Task.objects.all().delete()
-        return Response({"success": "All students deleted"}, status=status.HTTP_204_NO_CONTENT)
+        try:
+            students = Student_Task.objects.all()
+            students.delete()
+            return Response({"success": "All students deleted."}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     
 
 
 class StudentTaskByRollno(APIView):
+    
+    def get(self, request, roll_no):
+        '''
+        Handle the GET request to retrieve a student by roll number.
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/crud/roll_no/
+        '''
+        try:
+            student = Student_Task.objects.get(roll_no=roll_no)
+            serializer = StudentTaskSerializer(student)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Student_Task.DoesNotExist:
+            return Response({"error": "Student task not found."}, status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, roll_no):
         '''
@@ -72,29 +103,29 @@ class StudentTaskByRollno(APIView):
     def put(self, request, roll_no):
         '''
         Handle the PUT request to update an existing student task.
-        Use Postman to test this API at the following URL: http://127.0.0.1:8000/crud/roll_no/
+        Updates the student's data and recalculates the teacher's performance.
         '''
         try:
             student = Student_Task.objects.get(roll_no=roll_no)
             serializer = StudentTaskSerializer(student, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Student_Task.DoesNotExist:
-            return Response({"error": "Student task not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    def get(self, request, roll_no):
-        '''
-        Handle the GET request to retrieve a student task by roll number.
-        Use Postman to test this API at the following URL: http://127.0.0.1:8000/crud/roll_no/
-        '''
-        try:
-            student = Student_Task.objects.get(roll_no=roll_no)
-            serializer = StudentTaskSerializer(student)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            if serializer.is_valid():
+                updated_student = serializer.save()
+
+                if updated_student.teacher_id:
+                    # Recalculate the teacher's performance based on the updated student
+                    performance = calculate_performance(Student_Task.objects.filter(teacher_id=updated_student.teacher_id))
+                    Teacher_Task.objects.filter(employee_id=updated_student.teacher_id.employee_id).update(perfomance=performance)
+
+
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         except Student_Task.DoesNotExist:
             return Response({"error": "Student task not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StudentTopper(APIView):
     def get(self, request):
@@ -110,7 +141,6 @@ class StudentTopper(APIView):
         elif request.path == '/cutoff/':
             return self.students_with_cutoff(request)
         elif request.path == '/failed/':
-            # Extract subject name from the URL path
             return self.failed_student(request)
         
         return Response({"error": "Invalid endpoint"}, status=status.HTTP_404_NOT_FOUND)
@@ -119,78 +149,80 @@ class StudentTopper(APIView):
 
     def get_top5_students(self, request):
         '''
-            View to list the first 5 top-performing students.
-            Use Postman to test this API at the following URL: http://127.0.0.1:8000/toppers/
+        View to list the first 5 top-performing students based on total marks.
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/toppers/
         '''
     
         try:
+            # Retrieve the top 5 students ordered by total marks in descending order
             top_students = Student_Task.objects.order_by('-total_marks_field')[:5]
-
-            serialized_data = format_students_data(top_students, title=f"top_5_students")
-            return serialized_data 
+            
+            serializer = StudentTaskSerializer(top_students, many=True)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 
-    def students_with_cutoff(self, request,cutoff=150):
+    def students_with_cutoff(self, request, cutoff=150):
         '''
-        View to list students who have scored 150 or more total marks.
+        View to list students who have scored at least the specified cutoff(150) total marks.
         Use Postman to test this API at the following URL: http://127.0.0.1:8000/cutoff/
         '''
         try:
-            # Fetch students with marks greater than or equal to the cutoff
+            # Fetch students with total marks greater than or equal to the cutoff
             students = Student_Task.objects.filter(total_marks_field__gte=cutoff)
             
-            # Call the utility function to format the data
-            formatted_students = format_students_data(students, title=f"students_who_meet_cutoff_{cutoff}")
+            serializer = StudentTaskSerializer(students, many=True)
             
-            return formatted_students
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def failed_student(self, request,pass_mark=35):
+
+    def failed_student(self, request,pass_mark=35):     
         '''
-        View to list students who have failed in one or more subjects.
-        Use Postman to test this API at the following URL: 
-        - http://127.0.0.1:8000/failed/chemistry/
-        - http://127.0.0.1:8000/failed/physics/
-        - http://127.0.0.1:8000/failed/maths/
+        View to list students who have failed.
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/failed/
         '''
+        
         try:
             student= Student_Task.objects.filter(Q(chemistry__lt=pass_mark) | Q(physics__lt=pass_mark) | Q(maths__lt=pass_mark))
-            serialized_data = format_students_data(student, title=f"students_who_failed_lessthan_{pass_mark}")
-            return serialized_data
+            serilize = StudentTaskSerializer(student, many=True)
+            return Response({"student_who_failed":serilize.data}, status=status.HTTP_200_OK)
         except Exception as e:
-            # Log the error (you might want to use a logging framework)
-            print(f"Error occurred: {str(e)}")  # Replace with actual logging
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
 class StudentAvg(APIView):
-    def get(self, request):
+    def get(self, request,teacher_id=not None):
         '''
-        View to list students based on the requested action.
         Use Postman to test this API at the following URLs:
         - http://127.0.0.1:8000/avg/
-        - http://127.0.0.1:8000/subject_failed/
-        - http://127.0.0.1:8000/teacher/
-        - http://127.0.0.1:8000/performance/
+        - http://127.0.0.1:8000/teacher/teacher_id
+        - http://127.0.0.1:8000/performance/employee_id
         '''
         if request.path == '/avg/':
             return self.student_less_greater_avg(request)
-        elif request.path == '/subject_failed/':
-            return self.subject_wise_failed_student(request)
-        elif request.path == '/teacher/':
-            return self.students_by_teacher(request)
-        elif request.path == '/perfomance/':
-            return self.performance_of_teacher(request)
+        if request.path.startswith('/teacher/'):
+            return self.students_by_teacher(request,teacher_id)
+        elif request.path.startswith('/perfomance/'):
+            return self.performance_of_teacher(request,teacher_id)
 
         return Response({"error": "Invalid endpoint"}, status=status.HTTP_404_NOT_FOUND)
     
     def student_less_greater_avg(self, request):
-        '''View to calculate students with less than and greater than average.'''
+        '''
+        View to calculate students with less than and greater than average.
+        Use Postman to test this API at the following URL: http://127.0.0.1:8000/avg/
+        '''
         try:
             students = Student_Task.objects.all()
+
+            #calculating average using calculate_average() function from utils.py
             average_marks = calculate_average(students)
 
             less_than_avg = [student for student in students if student.total_marks_field < average_marks]
@@ -206,79 +238,39 @@ class StudentAvg(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def subject_wise_failed_student(self, request):
-        '''View to list students who failed in subjects.'''
-        try:
-            students = Student_Task.objects.all()
-            failed_students = {
-                "chemistry_failed": filter_failed_students(students, 'chemistry'),
-                "physics_failed": filter_failed_students(students, 'physics'),
-                "maths_failed": filter_failed_students(students, 'maths')
-            }
+       
 
-            serialized_data = {key: StudentTaskSerializer(value, many=True).data for key, value in failed_students.items()}
-            return Response(serialized_data, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    def students_by_teacher(self, request):
-        '''View to list students by teacher.'''
-        try:
-            students = Student_Task.objects.all()
-            grouped_students = group_students_by_teacher(students)
-
-            response_data = []
-            for teacher, students in grouped_students.items():
-                serialize = StudentTaskSerializer(students, many=True)
-                response_data.append({
-                    "class_teacher": teacher,
-                    "students": serialize.data
-                })
-
-            return Response(response_data, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-    def performance_of_teacher(self, request):
+    def students_by_teacher(self, request, teacher_id):
         '''
-        View to get the performance of teachers based on average marks scored by students.
+        Use Postman to test this API at the following URL:http://127.0.0.1:8000/teacher/teacher_id/
+        This function retrieves all students associated with a specific teacher, based on the teacher's ID (employee_id).
         '''
         try:
-            students = Student_Task.objects.all()
-            grouped_students = group_students_by_teacher(students)
-            teacher_performance = []
-            total_marks_possible = 300
-            for teacher, students in grouped_students.items():
-                average_marks = calculate_average(students) 
+            
+            students = Student_Task.objects.filter(teacher_id=teacher_id)
+            serialize = StudentTaskSerializer(students, many=True)
 
-                # Calculate performance percentage based on average marks
-                performance_percentage = (average_marks / total_marks_possible) * 100 if total_marks_possible > 0 else 0
-
-                teacher_performance.append({
-                    "class_teacher": teacher,
-                    "average_marks": average_marks,
-                    "performance_percentage": performance_percentage,
-                })
-
-            # Sort teachers by average marks in descending order
-            teacher_performance.sort(key=lambda x: x['average_marks'], reverse=True)
-
-            # Separate the first performer teacher
-            first_performer = teacher_performance[0] if teacher_performance else None
-            other_teachers = teacher_performance[1:] if len(teacher_performance) > 1 else []
-
-            # Prepare the final response data
             response_data = {
-                "first_performer": first_performer,
-                "other_teachers": other_teachers,
+                "class_teacher_id": teacher_id, 
+                "students": serialize.data
             }
 
             return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def performance_of_teacher(self, request,teacher_id):
+        '''
+        View to get the performance of teacher
+        Use Postman to test this API at the following URL:http://127.0.0.1:8000/perfomance/employee_id/
+
+        '''
+        try:
+            teacher =Teacher_Task.objects.filter(employee_id=teacher_id)
+            serilize=TeacherTaskSerializer(teacher,many=True)
+            return Response(serilize.data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

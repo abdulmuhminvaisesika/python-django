@@ -8,11 +8,14 @@ urlpatterns = [
     path('toppers/', StudentTopper.as_view(), name='toppers'),
     path('failed/', StudentTopper.as_view(), name="failed"),
     path('avg/', StudentAvg.as_view(), name="avg"),
-    path('subject_failed/', StudentAvg.as_view(), name="subject_failed"),
-    path('teacher/', StudentAvg.as_view(), name="teacher"),
-    path('perfomance/', StudentAvg.as_view(), name="perfomancer"),
 
+    path('teacher/<int:teacher_id>/', StudentAvg.as_view(), name='students_by_teacher'),
 
+    path('perfomance/<int:teacher_id>/', StudentAvg.as_view(), name="perfomance"),
+
+    #used for perform crud operation based on roll number
     path('crud/<int:roll_no>/', StudentTaskByRollno.as_view(), name='student_task'),
+    
+    #this path used for post and get,delete all the students
     path('crud/', Crud_All_Student.as_view(),name="crud_on_all_student")
 ]
