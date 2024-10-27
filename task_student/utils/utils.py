@@ -1,9 +1,7 @@
 # utils/utils.py
 
 
-from rest_framework.response import Response
-from rest_framework import status
-from collections import defaultdict
+
 
 
 def calculate_total_marks(chemistry, physics, maths):
@@ -40,9 +38,3 @@ def calculate_performance(students):
 
     percentage_performance = (average_marks / 300) * 100
     return percentage_performance
-
-
-
-
-
-
