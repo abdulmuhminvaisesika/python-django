@@ -38,3 +38,5 @@ def calculate_performance(students):
 
     percentage_performance = (average_marks / 300) * 100
     return percentage_performance
+
+

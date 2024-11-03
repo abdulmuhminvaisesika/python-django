@@ -1,5 +1,5 @@
 # Project Documentation: Task Student API
-## Project Name: Task Student
+## Project Name: Task_Student
 ### Structure:
 
 * Main Modules:

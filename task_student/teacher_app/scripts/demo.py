@@ -1,10 +1,9 @@
 
-
-
+import random
+#Local Imports
 from school_app.models import School_Task
 from department_app.models import Department_Task
 from teacher_app.models import Teachers_Task
-from utils.utils import calculate_performance  
 from student_app.models import Student_Task
 
 
@@ -129,7 +128,100 @@ def update_department_HOD():
     print("Updated department_HOD fields with corresponding teachers.")
 
 
-def run():
-    update_department_HOD()
-       
 
+
+from student_app.models import Student_Task
+from teacher_app.models import Teachers_Task
+
+def update_student_department_and_school():
+    # Fetch all students
+    students = Student_Task.objects.all()
+
+    for student in students:
+        # Check if the student has a teacher assigned
+        if student.teacher_id:
+            # Retrieve the teacher's department and school from Teachers_Task
+            teacher = Teachers_Task.objects.get(employee_id=student.teacher_id.employee_id)
+            student.department_ID = teacher.department_ID
+            student.school_ID = teacher.school_ID
+
+            # Save the updated student record
+            student.save()
+            print(f"Updated {student.name} with department_ID: {student.department_ID} and school_ID: {student.school_ID}")
+
+    print("All student records have been updated.")
+
+
+
+
+
+
+def assign_random_departments_to_schools(num_departments_to_assign=2):
+    schools= School_Task.objects.filter(is_active=True)
+    departments= Department_Task.objects.filter(is_active=True)
+
+    for school in schools:
+        selected_departments= random.sample(list(departments), k=min(num_departments_to_assign, len(departments)))
+
+        school.department_ID.clear()
+
+        for departemt in selected_departments:
+            school.department_ID.add(departemt)
+
+        print(f"Assigned departments to {school.school_name}: {[dept.department_name for dept in selected_departments]}")
+    print("All active schools have been updated with random departments.")
+
+
+
+def update_teacher_schools():
+    # Get all active schools
+    active_schools = School_Task.objects.filter(is_active=True)
+
+    if not active_schools:
+        print("No active schools found. Aborting update.")
+        return
+
+    # Update school_ID for each teacher
+    for teacher in Teachers_Task.objects.all():
+        # Select a random school from active schools
+        random_school = random.choice(active_schools)
+        teacher.school_ID = random_school
+        teacher.save()
+        print(f'Updated school_ID for {teacher.name} to {random_school.school_name}.')
+
+    print('All teachers have been updated with random school IDs.')
+
+
+
+
+def assign_departments_to_teachers():
+    # Get all active teachers
+    teachers = Teachers_Task.objects.filter(is_active=True)
+
+    for teacher in teachers:
+        # Get the school for the teacher
+        school = teacher.school_ID
+        
+        if school:
+            # Get departments associated with the teacher's school
+            departments = school.department_ID.all()  # Assuming this still works to get related departments
+            
+            if departments.exists():  # Check if there are departments
+                # Choose a random department from the available departments
+                selected_department = random.choice(departments)
+                
+                # Assign the selected department to the teacher
+                teacher.department_ID.add(selected_department)  # Use add() for ManyToManyField
+                
+                # Save the teacher instance to update the database
+                teacher.save()
+                
+                print(f'Assigned {selected_department.department_name} to {teacher.name}.')
+            else:
+                print(f'No departments found for school {school.school_name} for teacher {teacher.name}.')
+        else:
+            print(f'Teacher {teacher.name} does not have an associated school.')
+
+# Entry point for django-extensions
+def run():
+    assign_departments_to_teachers()

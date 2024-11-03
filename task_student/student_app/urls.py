@@ -1,5 +1,8 @@
+#Django Imports
 from django.urls import path
-from .views import Crud_All_Student, StudentTopper, StudentAvg
+
+#Local Imports
+from .views import Crud_All_Student, StudentTopper, StudentAvg, StudentStatusView
 
 urlpatterns = [
     path('cutoff/', StudentTopper.as_view(), name='cutoff'), 
@@ -10,5 +13,7 @@ urlpatterns = [
     path('avg/', StudentAvg.as_view(), name='student_less_greater_avg'),
     path('teacher/<int:teacher_id>/', StudentAvg.as_view(), name='students_by_teacher'),
     path('performance/<int:teacher_id>/', StudentAvg.as_view(), name='performance_of_teacher'),
-    path('performance/', StudentAvg.as_view(), name='performance_of_all_teachers'),  # New route for all teachers
+    path('performance/', StudentAvg.as_view(), name='performance_of_all_teachers'),
+    path('<str:status>/', StudentStatusView.as_view(), name='school-status'),
+
 ]
