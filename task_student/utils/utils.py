@@ -4,9 +4,7 @@
 
 
 
-def calculate_total_marks(chemistry, physics, maths):
-    """Calculate the total marks for a student."""
-    return chemistry + physics + maths
+
 
 def calculate_percentage(total_marks):
     """Calculate the percentage based on total marks."""

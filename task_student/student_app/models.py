@@ -2,15 +2,13 @@
 from django.db import models
 
 # Local Imports
-from utils.utils import calculate_total_marks, calculate_percentage, calculate_performance
+from utils.utils import calculate_percentage, calculate_performance
 from teacher_app.models import Teachers_Task
 
 class Student_Task(models.Model):
     name = models.CharField(max_length=50)
     roll_no = models.AutoField(primary_key=True)
-    chemistry = models.IntegerField(default=0)
-    physics = models.IntegerField(default=0)
-    maths = models.IntegerField(default=0)
+    
     
     total_marks_field = models.IntegerField(default=0)  
     percentage_field = models.FloatField(default=0.0)   
@@ -25,7 +23,6 @@ class Student_Task(models.Model):
 
     def save(self, *args, **kwargs):
         # Calculate total marks and percentage
-        self.total_marks_field = calculate_total_marks(self.chemistry, self.physics, self.maths)
         self.percentage_field = calculate_percentage(self.total_marks_field)
 
         if self.teacher_id:

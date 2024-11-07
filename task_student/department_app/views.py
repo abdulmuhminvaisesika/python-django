@@ -11,7 +11,7 @@ from teacher_app.serializers import TeacherTaskSerializer
 from student_app.models import Student_Task
 from student_app.serializers import StudentTaskSerializer
 from school_app.models import School_Task
-
+from school_app.serializers import SchoolTaskSerializer
 # Create your views here.
 
 class DepartmentCrudOperations(APIView):
@@ -36,10 +36,8 @@ class DepartmentCrudOperations(APIView):
             serializer = DepartmentTaskSerializer(data=request.data)
 
             if serializer.is_valid():
-                print("Validated Data:", serializer.validated_data)  # Debugging line
 
                 department_instance = serializer.save()
-                print("Saved Department Instance:", department_instance)  # Debugging line
 
                 return Response(
                     {'message': 'Record created successfully', 'data': DepartmentTaskSerializer(department_instance).data},
@@ -144,3 +142,5 @@ class DepartmentsBySchoolView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+

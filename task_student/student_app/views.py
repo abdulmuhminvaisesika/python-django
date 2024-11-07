@@ -6,13 +6,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-
 #Local Imports
 from .models import Student_Task
 from .serializers import StudentTaskSerializer
-from teacher_app.models import Teachers_Task
-from school_app.models import School_Task
-from department_app.serializers import DepartmentTaskSerializer
+
 
 from utils.utils import calculate_average
 
@@ -135,14 +132,16 @@ class StudentTopper(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-    def failed_student(self,pass_mark=35):     
+    def failed_student(self,pass_mark=80):     
         '''
         View to list students who have failed.
         Use Postman to test this API at the following URL: http://127.0.0.1:8000/failed/
         '''
         
         try:
-            student= Student_Task.objects.filter(Q(chemistry__lt=pass_mark) | Q(physics__lt=pass_mark) | Q(maths__lt=pass_mark))
+            #filter only students totalmark lessthan passmark(80)
+            student= Student_Task.objects.filter(total_marks_field__lt=pass_mark)
+
             serilize = StudentTaskSerializer(student, many=True)
             return Response({"student_who_failed":serilize.data}, status=status.HTTP_200_OK)
         except Exception as e:

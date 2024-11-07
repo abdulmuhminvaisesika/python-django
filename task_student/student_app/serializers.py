@@ -7,7 +7,7 @@ class StudentTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student_Task
         fields = [
-            'roll_no', 'name', 'chemistry', 'physics', 'maths', 
+            'roll_no', 'name', 
             'total_marks_field', 'percentage_field', 'teacher_id', 
             'department_ID', 'school_ID', 'is_active', 
             'created_on', 'updated_on'
