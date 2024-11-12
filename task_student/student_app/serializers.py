@@ -12,7 +12,7 @@ class StudentTaskSerializer(serializers.ModelSerializer):
             'department_ID', 'school_ID', 'is_active', 
             'created_on', 'updated_on'
         ]
-
+    
     def validate_teacher_id(self, value):
         # Extract relevant IDs from data
         teacher_id = self.initial_data.get('teacher_id')
@@ -41,3 +41,57 @@ class StudentTaskSerializer(serializers.ModelSerializer):
                     f"Teacher {teacher.employee_id} does not belong to department ID: {department_id}."
                 )
         return value
+
+
+# class CustomStudentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CustomStudentUser
+#         fields = ['roll_no', 'username', 'password', 'first_name', 'last_name', 'performance', 'is_active', 'created_on', 'updated_on', 'school_ID', 'department_ID']
+#         extra_kwargs = {'password': {'write_only': True}}
+
+#     def create(self, validated_data):
+
+
+#         department_ids = validated_data.pop('department_ID', [])
+
+
+#         password = validated_data.pop('password')
+#         user = CustomStudentUser(**validated_data)
+#         user.set_password(password)  # Hash the password
+#         user.save()
+
+#         user.department_ID.set(department_ids)
+
+
+#         return user
+
+#     def validate_teacher_id(self, value):
+#         # Extract relevant IDs from data
+#         teacher_id = self.initial_data.get('teacher_id')
+#         school_id = self.initial_data.get('school_ID')
+
+#         # If a teacher is provided, check department and school consistency
+#         if teacher_id:
+#             teacher = get_object_or_404(Teachers_Task, employee_id=teacher_id)
+
+
+#             if school_id and teacher.school_ID.school_ID != school_id:
+#                 raise serializers.ValidationError(
+#                     f"Teacher {teacher.employee_id} does not belong to school ID: {school_id}."
+#                 )
+            
+
+
+#             valid_departments = set(teacher.department_ID.values_list('department_ID', flat=True))  # Use .values_list to get IDs
+
+#             # Check if the provided department ID is valid for the teacher
+#             department_id = self.initial_data.get('department_ID')
+
+#             # Check if department_id is in the list of valid departments
+#             if department_id is not None and department_id not in valid_departments:
+#                 raise serializers.ValidationError(
+#                     f"Teacher {teacher.employee_id} does not belong to department ID: {department_id}."
+#                 )
+#         return value
+
+       
