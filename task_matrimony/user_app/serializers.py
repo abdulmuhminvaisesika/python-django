@@ -2,11 +2,16 @@ from rest_framework import serializers
 from .models import CustomUser
 
 class CustomUserSerializer(serializers.ModelSerializer):
+    join_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
+    last_login = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
+    created_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
+    updated_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
+
     class Meta:
         model = CustomUser
         fields = [
             'user_id', 'username', 'password', 'email', 'first_name', 'last_name',
-            'role','subcription_plan','join_date', 'last_login', 'created_on', 'updated_on', 'is_active', 'is_staff', 'is_superuser'
+            'role','subcription_plan','join_date', 'last_login', 'created_on', 'updated_on', 'is_active', 'is_admin'
         ]
         extra_kwargs = {'password': {'write_only': True}}  # Password is write-only for security
 

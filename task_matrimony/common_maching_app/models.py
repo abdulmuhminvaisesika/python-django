@@ -7,13 +7,9 @@ from django.db.models import Max
 
 class Common_Matching(models.Model):
     FIELD_TYPES = [
-        ('age', 'Age'),
         ('gender', 'Gender'),
-        ('weight', 'Weight'),
-        ('height', 'Height'),
         ('religion', 'Religion'),
         ('caste', 'Caste'),
-        ('income', 'Income'),
         ('profession', 'Profession'),
         ('education', 'Education'),
         ('marital_status', 'Marital Status'),
@@ -36,13 +32,9 @@ class Common_Matching(models.Model):
         if not self.code:
             # Generate code prefix based on type
             prefix_map = {
-                'age': 'AG',
                 'gender': 'GN',
-                'weight': 'WT',
-                'height': 'HT',
                 'religion': 'RE',
-                'caste': 'CT',
-                'income': 'IN',
+                'caste': 'CA',
                 'profession': 'PR',
                 'education': 'ED',
                 'marital_status': 'MS',

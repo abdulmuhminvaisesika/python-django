@@ -1,22 +1,25 @@
 from django.db import models
-from django.apps import apps  # For lazy importing
 
 class Preference(models.Model):
-
     user = models.OneToOneField('user_app.CustomUser', on_delete=models.CASCADE, related_name="preference")
     
-    # Lazy import for Common_Matching to avoid circular import
-    age = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_age', limit_choices_to={'type': 'age'})
-    gender = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_gender', limit_choices_to={'type': 'gender'})
-    religion = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_religion', limit_choices_to={'type': 'religion'})
-    caste = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_caste', limit_choices_to={'type': 'caste'})
-    income = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_income', limit_choices_to={'type': 'income'})
-    profession = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_profession', limit_choices_to={'type': 'profession'})
-    education = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_education', limit_choices_to={'type': 'education'})
-    location = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_location', limit_choices_to={'type': 'location'})
-    height = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_height', limit_choices_to={'type': 'height'})
-    weight = models.ManyToManyField('common_maching_app.Common_Matching', related_name='user_preferences_weight', limit_choices_to={'type': 'weight'})
-    
+    # Using JSONField to store range as dictionary for fields that require ranges
+    age_range = models.JSONField(blank=True, null=True)  # Example: {"min": 20, "max": 30}
+    income_range = models.JSONField(blank=True, null=True)  # Example: {"min": 50000, "max": 100000}
+    height_range = models.JSONField(blank=True, null=True)  # Example: {"min": 150.5, "max": 180.5}
+    weight_range = models.JSONField(blank=True, null=True)  # Example: {"min": 50.5, "max": 80.5}
+
+    # Using JSONField to store multiple options as lists
+    gender = models.CharField(max_length=10, blank=True, null=True)  # Single selection for gender
+
+    # Fields that can have multiple options
+    religion = models.JSONField(blank=True, null=True)  # Example: ["Hindu", "Muslim"]
+    caste = models.JSONField(blank=True, null=True)  # Example: ["Brahmin", "Kshatriya"]
+    profession = models.JSONField(blank=True, null=True)  # Example: ["Engineer", "Doctor"]
+    education = models.JSONField(blank=True, null=True)  # Example: ["Bachelor's", "Master's"]
+    location = models.JSONField(blank=True, null=True)  # Example: ["New York", "San Francisco"]
+    language = models.JSONField(blank=True, null=True)  # Example: ["English", "Hindi"]
+    marital_status = models.JSONField(blank=True, null=True)  # Example: ["Single", "Divorced"]
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 

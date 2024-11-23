@@ -1,19 +1,31 @@
+# serializers.py in preference_app
 from rest_framework import serializers
 from .models import Preference
-from common_maching_app.serailizers import CommonMatchingSerializer
+from utils import validate_common_matching  # Import the utility function
 
 class PreferenceSerializer(serializers.ModelSerializer):
-    age = CommonMatchingSerializer(many=True)
-    gender = CommonMatchingSerializer(many=True)
-    religion = CommonMatchingSerializer(many=True)
-    caste = CommonMatchingSerializer(many=True)
-    income = CommonMatchingSerializer(many=True)
-    profession = CommonMatchingSerializer(many=True)
-    education = CommonMatchingSerializer(many=True)
-    location = CommonMatchingSerializer(many=True)
-    height = CommonMatchingSerializer(many=True)
-    weight = CommonMatchingSerializer(many=True)
-
+    created_on= serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S",required=False)
+    updated_on= serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
     class Meta:
         model = Preference
-        fields = ['user', 'age', 'gender', 'religion', 'caste', 'income', 'profession', 'education', 'location', 'height', 'weight', 'created_on', 'updated_on']
+        fields = '__all__'
+        read_only_fields = ['user']
+
+    def validate(self, attrs):
+        field_mappings = {
+            'location': 'location',
+            'education': 'education',
+            'profession': 'profession',
+            'caste': 'caste',
+            'religion': 'religion',
+            'gender': 'gender',
+            'language': 'language',
+            'marital_status': 'marital_status',
+            
+        }
+
+        for field, field_type in field_mappings.items():
+            if field in attrs:
+                attrs[field] = validate_common_matching(attrs[field], field_type)
+
+        return attrs

@@ -1,24 +1,26 @@
 from django.db import models
+from datetime import date
+from django.forms import ValidationError
+
 
 class User_Profile_Table(models.Model):
     # Avoid circular import by using lazy imports
     user = models.OneToOneField('user_app.CustomUser', on_delete=models.CASCADE, related_name="profile")
     
-    # Use ForeignKey to link to Common_Matching table for specific types
-    age = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'age'}, related_name='age_profiles')
-    gender = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'gender'}, related_name='gender_profiles')
+    age = models.IntegerField(blank=True, null=True)  # Age as an integer field
+    gender = models.CharField(max_length=10, blank=True, null=True)  # Gender as a character field
     dob = models.DateField()
     bio = models.TextField(blank=True, null=True)
-    weight = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'weight'}, related_name='weight_profiles')
-    height = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'height'}, related_name='height_profiles')
-    religion = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'religion'}, related_name='religion_profiles')
-    caste = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'caste'}, related_name='caste_profiles')
-    income = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'income'}, related_name='income_profiles')
-    profession = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'profession'}, related_name='profession_profiles')
-    education = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'education'}, related_name='education_profiles')
-    location = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'location'}, related_name='location_profiles')
-    marital_status = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'marital_status'}, related_name='marital_status_profiles')
-    language = models.ForeignKey('common_maching_app.Common_Matching', on_delete=models.CASCADE, limit_choices_to={'type': 'language'}, related_name='language_profiles')
+    weight = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)  # Weight as decimal
+    height = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)  # Height as decimal
+    religion = models.CharField(max_length=50, blank=True, null=True)
+    caste = models.CharField(max_length=50, blank=True, null=True)
+    income = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # Income as decimal
+    profession = models.CharField(max_length=100, blank=True, null=True)
+    education = models.CharField(max_length=100, blank=True, null=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
+    marital_status = models.CharField(max_length=20, blank=True, null=True)
+    language = models.CharField(max_length=50, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -26,3 +28,30 @@ class User_Profile_Table(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Profile"
+
+    
+
+    def calculate_age(self):
+        """Calculate age from the date of birth"""
+        today = date.today()
+        age = today.year - self.dob.year - ((today.month, today.day) < (self.dob.month, self.dob.day))
+        return age
+
+    def clean(self):
+        """Custom validation for age and dob mismatch"""
+        if not self.age:
+            # If age is not provided, calculate it from dob
+            self.age = self.calculate_age()
+
+        # Validate that the age matches the dob
+        calculated_age = self.calculate_age()
+        if self.age and self.age != calculated_age:
+            raise ValidationError("Age does not match with the provided date of birth.")
+
+    def save(self, *args, **kwargs):
+        """Override save method to ensure age is calculated if not provided"""
+        # Call the clean method for validation
+        self.clean()
+
+        # Now save the instance
+        super(User_Profile_Table, self).save(*args, **kwargs)

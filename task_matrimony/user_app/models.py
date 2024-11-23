@@ -34,14 +34,17 @@ class CustomUser(AbstractBaseUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     role=models.CharField(max_length=255, choices=ROLE_CHOICES, default='user')
+
+    subcription_plan = models.ForeignKey('subcription_app.SubcriptionTable', on_delete =models.CASCADE , null=True, blank=True)  # Missing default value
+    
     join_date = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)
 
 
     is_active = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    subcription_plan = models.CharField(max_length=255)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
@@ -57,15 +60,18 @@ class CustomUser(AbstractBaseUser):
             self.is_superuser = True
             self.is_staff = True
             self.is_active = True
+            self.is_admin = True
             self.subcription_plan = None
         elif self.role == 'user':
             self.is_superuser = False
             self.is_staff = False
             self.is_active = True
+            self.is_admin = False
         elif self.role == 'suspended_user':
             self.is_superuser = False
             self.is_staff = False
             self.is_active = False
+            self.is_admin = False
 
 
         # Ensure password is hashed before saving

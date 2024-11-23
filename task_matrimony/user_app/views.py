@@ -1,6 +1,7 @@
-from django.contrib.auth import authenticate
+from datetime import timezone
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from django.contrib.auth import logout
+from datetime import timedelta
 
 
 from rest_framework import permissions, status
@@ -13,12 +14,14 @@ from rest_framework.permissions import IsAuthenticated
 
 from .serializers import CustomUserSerializer
 from .models import CustomUser
-
+from notification_app.models import Notification_Table
+from subcription_app.models import SubcriptionsForUser, SubcriptionTable
 
 
 # Create your views here.
 
 class UserCrudOperation(APIView):
+
     def get(self, request):
         try:
             users = CustomUser.objects.all()
@@ -39,21 +42,72 @@ class UserCrudOperation(APIView):
     # POST: Create a new user
     def post(self, request):
         serializer = CustomUserSerializer(data=request.data)
+
         if serializer.is_valid():
             user = serializer.save()
             token, created = Token.objects.get_or_create(user=user)
-            return Response({
+            # Handle subscription logic if subscription plan is provided
+            subscription_plan = user.subcription_plan
+            if subscription_plan:
+                try:
+                    # Retrieve subscription details from SubcriptionTable
+                    subscription_details = SubcriptionTable.objects.get(subcription_type=subscription_plan)
+
+                    # Create entry in SubcriptionsForUser
+                    SubcriptionsForUser.objects.create(
+                        user_id=user,
+                        subcription_type=subscription_details,
+                        subcription_price=subscription_details.subcription_price,
+                        subcription_duration=subscription_details.subcription_duration,
+                        subcription_started_at=user.join_date,
+                        subcription_ending_at = user.join_date + timedelta(days=subscription_details.subcription_duration)
+
+                    )
+                except SubcriptionTable.DoesNotExist:
+                    return Response({"error": "Invalid subscription plan"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                Notification_Table.objects.create(
+                    sender_id_id= user.user_id,
+                    receiver_id_id=user.user_id,  # Notification for this user
+                    notification_type="",
+                    notification_message=f"🎉 Your subscription plan '{subscription_plan}' is officially activated! 💍 Get ready to meet your perfect match! 💖 You've got {subscription_plan.subcription_duration} days of adventure ahead. Enjoy every moment! 😘",
+                    is_read=False
+                )
+                
+                
+
+
+    
+            # Query all existing users except the newly created user
+            all_users = CustomUser.objects.exclude(user_id=user.user_id)
+            # Create a notification for all other users
+            for existing_user in all_users:
+                Notification_Table.objects.create(
+                    sender_id_id= user.user_id,
+                    receiver_id_id=existing_user.user_id,  # Notification for this user
+                    notification_type="riminder",
+                    notification_message=f"A new user found! '{user.username}' has joined the platform.",
+                    is_read=False)
+                
+                
+            return Response({  
                 "user": serializer.data,
                 "token": token.key
-            }, status=status.HTTP_201_CREATED)
+                }, status=status.HTTP_201_CREATED)
         
+
+            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserCrudOperationByID(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
+
         try:
+            if request.user.user_id != user_id:
+                return Response({"error": "You are not authorized to view this user's information."}, status=status.HTTP_403_FORBIDDEN)
+        
             user = CustomUser.objects.get(user_id=user_id)
             serializer = CustomUserSerializer(user)
             return Response(serializer.data)
@@ -66,8 +120,35 @@ class UserCrudOperationByID(APIView):
             serializer = CustomUserSerializer(user, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data)
+
+                # Handle subscription logic if subscription plan is provided
+                subscription_plan = user.subcription_plan
+                if subscription_plan:
+                    try:
+                        # Retrieve subscription details from SubcriptionTable
+                        subscription_details = SubcriptionTable.objects.get(subcription_type=subscription_plan)
+
+                        # Update or create entry in SubcriptionsForUser
+                        subscription, created = SubcriptionsForUser.objects.update_or_create(
+                            user_id=user,
+                            defaults={
+                                "subcription_type": subscription_details,
+                                "subcription_price": subscription_details.subcription_price,
+                                "subcription_duration": subscription_details.subcription_duration,
+                                "subcription_started_at": user.updated_on,
+                                "subcription_ending_at": user.updated_on + timedelta(days=subscription_details.subcription_duration),
+
+                                "subcription_active_status": True,
+                            }
+                        )
+                    except SubcriptionTable.DoesNotExist:
+                        return Response({"error": "Invalid subscription plan"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -92,6 +173,8 @@ class LoginView(APIView):
         print(user)
 
         if user is not None:
+            login(request, user)  # Logs in the user and updates the `last_login` field
+
             token, created = Token.objects.get_or_create(user=user)
             return Response({"token": token.key}, status=status.HTTP_200_OK)
         else:

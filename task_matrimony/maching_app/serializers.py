@@ -1,26 +1,25 @@
-from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from .models import Matching
-from django.db.models import Q
 
-class MatchingSerializer(serializers.ModelSerializer):
+
+from .models import Matching
+from user_profile_app.models import User_Profile_Table
+from user_profile_app.serializers import UserProfileSerializer
+
+class MatchingScoreModelSerializer(serializers.ModelSerializer):
+    user2_profile = serializers.SerializerMethodField()
+    created_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    updated_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+
     class Meta:
         model = Matching
-        fields = ['user1', 'user2', 'status']
+        fields = ['user1', 'user2', 'status', 'score', 'user2_profile','created_on', 'updated_on']
+        read_only_fields = ['user1', 'user2', 'status','score']
 
-    def validate(self, data):
-        user1 = data['user1']
-        user2 = data['user2']
-        
-        # Prevent a user from matching with themselves
-        if user1 == user2:
-            raise ValidationError({"error": "A user cannot match with themselves."})
-        
-        # Ensure only one pending or accepted match exists between two users
-        if Matching.objects.filter(
-            (Q(user1=user1) & Q(user2=user2)) | (Q(user1=user2) & Q(user2=user1)),
-            Q(status__in=['Pending', 'Accepted'])
-        ).exists():
-            raise ValidationError({"error": "Only one pending or accepted match can exist between two users."})
-        
-        return data
+    def get_user2_profile(self, obj):
+        # Fetch the profile of user2 using User_Profile_Table
+        try:
+            profile = User_Profile_Table.objects.get(user=obj.user2)
+            return UserProfileSerializer(profile).data  # Use the existing serializer
+        except User_Profile_Table.DoesNotExist:
+            return None  # Handle the case where no profile exists
+

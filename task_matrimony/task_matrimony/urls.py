@@ -25,7 +25,10 @@ urlpatterns = [
     path('profiles/', include('user_profile_app.urls')),
     path('preferences/', include('preferance_app.urls')),
     path('maching/', include('maching_app.urls')),
-    path('master_table/', include('common_maching_app.urls'))
+    path('master_table/', include('common_maching_app.urls')),
+    path('subcriptions/', include('subcription_app.urls')),
+    path('notifications/', include('notification_app.urls')),
+    path('messages/', include('message_app.urls')),
     
 ]
 

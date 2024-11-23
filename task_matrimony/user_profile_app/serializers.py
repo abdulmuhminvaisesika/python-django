@@ -1,39 +1,32 @@
+# serializers.py in profile_app
 from rest_framework import serializers
 from .models import User_Profile_Table
-from common_maching_app.serailizers import CommonMatchingSerializer  # Import serializer for Common_Matching model
+from utils import validate_common_matching  # Import the utility function
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    # Use the CommonMatchingSerializer for ForeignKey fields
-    age = CommonMatchingSerializer()
-    gender = CommonMatchingSerializer()
-    weight = CommonMatchingSerializer()
-    height = CommonMatchingSerializer()
-    religion = CommonMatchingSerializer()
-    caste = CommonMatchingSerializer()
-    income = CommonMatchingSerializer()
-    profession = CommonMatchingSerializer()
-    education = CommonMatchingSerializer()
-    location = CommonMatchingSerializer()
-    marital_status = CommonMatchingSerializer()
-    language = CommonMatchingSerializer()
-
+    created_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S",required=False)
+    updated_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
     class Meta:
         model = User_Profile_Table
-        fields = [
-            'user', 'age', 'gender', 'dob', 'bio', 'weight', 'height', 'religion', 'caste',
-            'income', 'profession', 'education', 'location', 'created_on', 'updated_on',
-            'marital_status', 'address', 'language', 'image'
-        ]
-        read_only_fields = ['created_on', 'updated_on']
+        fields = '__all__'
+        read_only_fields = ['user']
 
-    def validate_age(self, value):
-        """Validate that age is at least 18"""
-        if value < 18:
-            raise serializers.ValidationError("Age should be more than 18")
-        return value
+    def validate(self, attrs):
+        field_mappings = {
+            'location': 'location',
+            'education': 'education',
+            'profession': 'profession',
+            'caste': 'caste',
+            'religion': 'religion',
+            'gender': 'gender',
+            'marital_status': 'marital_status',
+            'language': 'language'
+        }
 
-    def validate_income(self, value):
-        """Validate that income is non-negative"""
-        if value < 0:
-            raise serializers.ValidationError("Income can't be negative")
-        return value
+        for field, field_type in field_mappings.items():
+            if field in attrs:
+                attrs[field] = validate_common_matching(attrs[field], field_type)
+            
+
+
+        return attrs
