@@ -1632,14 +1632,17 @@ This app manages user profiles in the matrimony project. Each user has a profile
 
 ## Notification 
 
-| **App Name**         | **Notification Type** | **Notification Content**                                                                  | **From (Sender)**      | **To (Receiver)**       |
-|-----------------------|-----------------------|------------------------------------------------------------------------------------------|------------------------|-------------------------|
-| **Message_app**         | New_Message          | "US001 has sent you a message. Check it now!"                                            | User (e.g., US001)     | User (e.g., US006)      |
-| **User_app**   | Reminder             | "A new user found! 'username' has joined the platform."                                  | System/Admin           | All Existing Users      |
-| **Subscription_app**      | Offer                | "New Offer! A new subscription 'subscription_type' is now available. Check it out!"      | Admin/System           | Specific User           |
-| **Master_app**      | Reminder             | "New {master_table.type} option '{master_table.name}' added by Admin. Update your profile and preferences now!"                                            | Admin/System           | Specific User           |
-| **Matching**          | Request              | "[User1] has sent you a match request."                                                  | User (e.g., US001)     | User (e.g., US002)      |
-| **Matching**          | Accepted             | "[User2] has accepted your match request."                                              | User (e.g., US002)     | User (e.g., US001)      |
-| **Matching**          | Rejected             | "[User2] has rejected your match request."                                              | User (e.g., US002)     | User (e.g., US001)      |
-| **subcription_app**         | Reminder          | "🎉 Your subscription plan '[subscription_plan]' is officially activated! 💍 ..."        | System                 | Specific User           |
-| **profile_app**   | Profile              | "A new match found! '[request.user.username]' has joined the platform with a matching score of [score]%." | User (e.g., User001)   | User (e.g., User002)    |
+
+
+| **#** | **App Name**         | **Notification Type** | **Notification Content**                                                                  | **From (Sender)**      | **To (Receiver)**       |
+|-------|-----------------------|-----------------------|------------------------------------------------------------------------------------------|------------------------|-------------------------|
+| 1     | **Message_app**       | New_Message          | "US001 has sent you a message. Check it now!"                                            | User (e.g., US001)     | User (e.g., US006)      |
+| 2     | **User_app**          | Reminder             | "A new user found! 'username' has joined the platform."                                  | System/Admin           | All Existing Users      |
+| 3     | **Subscription_app**  | Offer                | "New Offer! A new subscription 'subscription_type' is now available. Check it out!"      | Admin/System           | Specific User           |
+| 4     | **Master_app**        | Reminder             | "New {master_table.type} option '{master_table.name}' added by Admin. Update your profile and preferences now!" | Admin/System | Specific User           |
+| 5     | **Matching**          | Request              | "[User1] has sent you a match request."                                                  | User (e.g., US001)     | User (e.g., US002)      |
+| 6     | **Matching**          | Accepted             | "[User2] has accepted your match request."                                              | User (e.g., US002)     | User (e.g., US001)      |
+| 7     | **Matching**          | Rejected             | "[User2] has rejected your match request."                                              | User (e.g., US002)     | User (e.g., US001)      |
+| 8     | **Subscription_app**  | Reminder             | "🎉 Your subscription plan '[subscription_plan]' is officially activated! 💍 ..."        | System                 | Specific User           |
+| 9     | **Profile_app**       | Profile              | "A new match found! '[request.user.username]' has joined the platform with a matching score of [score]%." | User (e.g., User001)   | User (e.g., User002)    |
+| 10    | **Subscription_app**  | Subscription             | "🎉 Your subscription plan '[subscription_plan]' has been reactivated! You've got [days_left] days left. Enjoy your experience! 😊" | System | Specific User |

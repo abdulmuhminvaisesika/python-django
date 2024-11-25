@@ -115,9 +115,12 @@ class UserCrudOperationByID(APIView):
 
     def put(self, request, user_id):
         try:
+            # Fetch the user
             user = CustomUser.objects.get(user_id=user_id)
             serializer = CustomUserSerializer(user, data=request.data)
+            
             if serializer.is_valid():
+                # Save user updates
                 serializer.save()
 
                 # Handle subscription logic if subscription plan is provided
@@ -128,7 +131,7 @@ class UserCrudOperationByID(APIView):
                         subscription_details = SubcriptionTable.objects.get(subcription_type=subscription_plan)
 
                         # Update or create entry in SubcriptionsForUser
-                        SubcriptionsForUser.objects.update_or_create(
+                        subscription, created = SubcriptionsForUser.objects.update_or_create(
                             user_id=user,
                             defaults={
                                 "subcription_type": subscription_details,
@@ -136,22 +139,46 @@ class UserCrudOperationByID(APIView):
                                 "subcription_duration": subscription_details.subcription_duration,
                                 "subcription_started_at": user.updated_on,
                                 "subcription_ending_at": user.updated_on + timedelta(days=subscription_details.subcription_duration),
-
                                 "subcription_active_status": True,
                             }
                         )
+
+                        # Determine the notification message
+                        if created:
+                            # New subscription activated
+                            notification_message = (
+                                f"🎉 Your subscription plan '{subscription_plan}' is officially activated! 💍 Get ready to meet your perfect match! "
+                                f"💖 You've got {subscription_details.subcription_duration} days of adventure ahead. Enjoy every moment! 😘"
+                            )
+                        else:
+                            # Existing subscription reactivated
+                            notification_message = (
+                                f"🎉 Your subscription plan '{subscription_plan}' has been reactivated! You've got "
+                                f"{subscription_details.subcription_duration} days left. Enjoy your experience! 😊"
+                            )
+
+                        # Create a notification for the user
+                        Notification_Table.objects.create(
+                            sender_id_id=user.user_id,
+                            receiver_id_id=user.user_id,  # Notification for this user
+                            notification_type="subscription",
+                            notification_message=notification_message,
+                            is_read=False
+                        )
+
                     except SubcriptionTable.DoesNotExist:
                         return Response({"error": "Invalid subscription plan"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
-
+            # Invalid data provided
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         except CustomUser.DoesNotExist:
+            # User not found
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-
+        
+        
     def delete(self, request, user_id):
         try:
             user = CustomUser.objects.get(user_id=user_id)
