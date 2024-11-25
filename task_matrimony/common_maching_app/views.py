@@ -37,7 +37,7 @@ class CommonMatchingListCreateView(generics.ListCreateAPIView):
                 sender_id_id="AD001",  # Replace with admin user ID if necessary
                 receiver_id_id=user.user_id,  # Using `user_id` as the primary key
                 notification_type="reminder",
-                notification_message=f"New {master_table.type} : {master_table.name} is added. Check it out!",
+                notification_message = f"New {master_table.type} option '{master_table.name}' added by Admin. Update your profile and preferences now!",
                 is_read=False
                 )
         return Response(

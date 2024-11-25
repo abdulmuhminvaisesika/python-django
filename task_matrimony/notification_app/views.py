@@ -23,13 +23,6 @@ class NotificationCrudOperation(ListCreateAPIView):
 
 
 
-class NotificationCrudOperationByType(RetrieveUpdateDestroyAPIView):
-
-    queryset = Notification_Table.objects.all()
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAdminUser]
-    lookup_field = 'notification_type'
-
 
 
 

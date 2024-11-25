@@ -8,4 +8,4 @@ class CommonMatchingSerializer(serializers.ModelSerializer):
       
     class Meta:
         model = Common_Matching
-        fields = ['id', 'type', 'code', 'name', 'display_name']
+        fields = ['id', 'type', 'code', 'name', 'display_name', 'created_on','updated_on']

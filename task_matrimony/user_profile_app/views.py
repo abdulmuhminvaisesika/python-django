@@ -32,7 +32,7 @@ class UserProfileListCreateView(APIView):
         """
         profiles = User_Profile_Table.objects.all()
         serializer = UserProfileSerializer(profiles, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         """

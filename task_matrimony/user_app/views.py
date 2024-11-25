@@ -1,6 +1,4 @@
-from datetime import timezone
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import User
 from datetime import timedelta
 
 
@@ -46,6 +44,7 @@ class UserCrudOperation(APIView):
         if serializer.is_valid():
             user = serializer.save()
             token, created = Token.objects.get_or_create(user=user)
+
             # Handle subscription logic if subscription plan is provided
             subscription_plan = user.subcription_plan
             if subscription_plan:
@@ -110,7 +109,7 @@ class UserCrudOperationByID(APIView):
         
             user = CustomUser.objects.get(user_id=user_id)
             serializer = CustomUserSerializer(user)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -129,7 +128,7 @@ class UserCrudOperationByID(APIView):
                         subscription_details = SubcriptionTable.objects.get(subcription_type=subscription_plan)
 
                         # Update or create entry in SubcriptionsForUser
-                        subscription, created = SubcriptionsForUser.objects.update_or_create(
+                        SubcriptionsForUser.objects.update_or_create(
                             user_id=user,
                             defaults={
                                 "subcription_type": subscription_details,
@@ -152,11 +151,13 @@ class UserCrudOperationByID(APIView):
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+
     def delete(self, request, user_id):
         try:
             user = CustomUser.objects.get(user_id=user_id)
-            user.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            user.is_active = False
+            user.save()
+            return Response({"message": "User deleted successfully!"}, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -168,9 +169,7 @@ class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
-        print(username, password)
         user = authenticate(username=username, password=password)
-        print(user)
 
         if user is not None:
             login(request, user)  # Logs in the user and updates the `last_login` field
