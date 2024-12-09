@@ -39,7 +39,6 @@ class SubcriptionCrudOperation(ListCreateAPIView):
 
 
             Notification_Table.objects.create(
-                sender_id_id="AD001",  # Replace with admin user ID if necessary
                 receiver_id_id=user.user_id,  # Using `user_id` as the primary key
                 notification_type="offer",
                 notification_message=f"New Offer! A new subscription '{ subscription.subcription_type }' is now available. Check it out!",
@@ -66,6 +65,7 @@ class SubcriptionList(ListCreateAPIView):
     queryset = SubcriptionsForUser.objects.all()
     serializer_class = SubcriptionsForUserSerializer
     permission_classes = [IsAdminUser]
+
 
 
 

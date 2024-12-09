@@ -13,6 +13,7 @@ from preferance_app.models import Preference
 from .models import Matching  # Import the Matching model if score storage is required
 from utils import calculate_matching_score
 from .serializers import MatchingScoreModelSerializer
+from user_profile_app.serializers import UserProfileSerializer
 
 
 class MatchingScoreView(APIView):
@@ -40,12 +41,14 @@ class MatchingScoreView(APIView):
 
         # Fetch the user objects
         try:
+            user1= get_object_or_404(CustomUser, user_id=user1_id)
+            if user1.subcription_plan == None:
+                return Response({"error": "You need to subscribe to a plan to match with others. Subscribe to a plan to read it!"}, status=status.HTTP_200_OK)
+            
             user1_preferences = get_object_or_404(Preference, user=user1_id)
             user2_profile = get_object_or_404(User_Profile_Table, user=user2_id)
         except ObjectDoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-        print(">>>>>>>>", user1_preferences)
-        print(">>>>>>>>", user2_profile)
         # Calculate the matching score using the most recent profile and preference data
         score = calculate_matching_score(user1_preferences, user2_profile)
 
@@ -61,22 +64,16 @@ class MatchingScoreView(APIView):
         # Serialize the matching score
         serializer = MatchingScoreModelSerializer(match)
 
-        # Debugging output: Check status before notification
-        print(f"Match status: {match.status}")
-        print(f"Matching score: {score}")
 
         user1 = get_object_or_404(CustomUser, user_id=user1_id)
 
         # Create a notification for the receiver
         Notification_Table.objects.create(
-            sender_id_id=user1_id,
             receiver_id_id=user2_id,
                 notification_type="request",
             notification_message=f"{ user1.username} has sent you a match request.",
             is_read=False
         )
-        print(">>>>>>>>",user1_id)
-        print(">>>>>>>>",user2_id)
         
 
 
@@ -96,47 +93,38 @@ class UserMatchingRecomentaion(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
 
-    def post(self, request, user_id):
-        try:
-            # Get the user preferences and profile
-            user_preferences = Preference.objects.get(user=user_id)
-            User_Profile_Table.objects.get(user=user_id)  # Ensure user exists in the profile table
-        except (Preference.DoesNotExist, User_Profile_Table.DoesNotExist):
-            return Response({"error": "User not found."}, status=404)
+    def get(self,request):
+        user_id = request.user.user_id
 
-        # Get all users, including newly added ones, excluding the provided user_id
-        all_users = User_Profile_Table.objects.exclude(user=user_id)
-        print(">>>>>>>",all_users)
+        users = User_Profile_Table.objects.exclude(user=user_id).exclude(gender=get_object_or_404(User_Profile_Table, user=user_id).gender).exclude(user__subcription_plan__isnull = True) 
+        
+        matching_scores = []
+        # show the maching score the users not save in database
+        for user in users:
+            user1_preferences = get_object_or_404(Preference, user=user_id)
+            user2_profile = get_object_or_404(User_Profile_Table, user=user.user_id)
+            score = calculate_matching_score(user1_preferences, user2_profile)
+            # Add user1 ID, user2 ID, and score to the list
 
-        # Iterate through all users and calculate match scores
-        for user in all_users:
-            try:
-                user_profile = User_Profile_Table.objects.get(user=user.user_id)
-                print(">>>>>>>>", user_profile)
-            except User_Profile_Table.DoesNotExist:
-                continue
+            matching_scores.append({
+                'recomended_user': user.user.username,
+                'score': score, 
+                'recomended_user_profile': UserProfileSerializer(user).data
+                
+            })
+            
+            # Sort the matching scores in descending order
+            matching_scores.sort(key=lambda x: x['score'], reverse=True)
+        
+        
+        # Serialize the matching scores
+        return Response({f"recomendations for the {request.user.username } ":matching_scores}, status=status.HTTP_200_OK)
+    
 
-            # Calculate the matching score
-            score = calculate_matching_score(user_preferences, user_profile)
-            print(">>>>>>>>", score)
-            if score > 0:
-                # Save the matching score to the Matching model
-                match, created = Matching.objects.update_or_create(
-                    user1_id=user_id,
-                    user2_id=user.user_id,
-                    defaults={'score': score, 'status': 'Pending'}
-                )
-                print(">>>>>>>>", match)
+       
         
 
-        # Retrieve all matching scores for the given user, ordered by score in descending order
-        matching_scores = Matching.objects.filter(user1_id=user_id).order_by('-score')
-        print(">>>>>>>>", matching_scores)
-        # Serialize the matching scores
-        serializer = MatchingScoreModelSerializer(matching_scores, many=True)
-        print(">>>>>>>>", serializer.data)
-        return Response(serializer.data, status = status.HTTP_200_OK)
-
+        
 
 
 
@@ -149,16 +137,9 @@ class UpdateMachingStatus(APIView):
 
     def put(self, request, *args, **kwargs):
         # Extracting user1 and user2 from the URL parameters
-        user1 = self.kwargs['user1']
-        user2 = self.kwargs['user2']
+        user1 = request.user.user_id
+        user2 = self.kwargs['user_id']
 
-
-        # Ensure the authenticated user is user2
-        if request.user.user_id != str(user2):
-            return Response(
-                {"error": "You are not authorized to update this match status."},
-                status=status.HTTP_403_FORBIDDEN
-            )
         
         try:
             # Retrieve the matching record between user1 and user2
@@ -166,7 +147,7 @@ class UpdateMachingStatus(APIView):
         except Matching.DoesNotExist:
             return Response({"error": "Matching record not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # You can include validation logic for the new status (if needed)
+
         new_status = request.data.get('status')
         if new_status not in dict(Matching.STATUS_CHOICES).keys():
             return Response({"error": "Invalid status."}, status=status.HTTP_400_BAD_REQUEST)

@@ -23,35 +23,9 @@ class User_Profile_Table(models.Model):
     language = models.CharField(max_length=50, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} - Profile"
-
-    
-
-    def calculate_age(self):
-        """Calculate age from the date of birth"""
-        today = date.today()
-        age = today.year - self.dob.year - ((today.month, today.day) < (self.dob.month, self.dob.day))
-        return age
-
-    def clean(self):
-        """Custom validation for age and dob mismatch"""
-        if not self.age:
-            # If age is not provided, calculate it from dob
-            self.age = self.calculate_age()
-
-        # Validate that the age matches the dob
-        calculated_age = self.calculate_age()
-        if self.age and self.age != calculated_age:
-            raise ValidationError("Age does not match with the provided date of birth.")
-
-    def save(self, *args, **kwargs):
-        """Override save method to ensure age is calculated if not provided"""
-        # Call the clean method for validation
-        self.clean()
-
-        # Now save the instance
-        super(User_Profile_Table, self).save(*args, **kwargs)
+        return self.user.username

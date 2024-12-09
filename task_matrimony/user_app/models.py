@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils import timezone  # Import timezone
 
 # Create your models here.
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, user_id, username, password=None, **extra_fields):
         if not username:
@@ -54,7 +53,10 @@ class CustomUser(AbstractBaseUser):
     REQUIRED_FIELDS = ['user_id', 'first_name']
 
     def save(self, *args, **kwargs):
-
+        # Prevent double hashing
+        if self.password and not self.password.startswith("pbkdf2_sha256$"):
+            self.set_password(self.password)
+        
         # Adjust permissions and active status based on the role
         if self.role == 'admin':
             self.is_superuser = True
@@ -74,9 +76,7 @@ class CustomUser(AbstractBaseUser):
             self.is_admin = False
 
 
-        # Ensure password is hashed before saving
-        if self.password and not self.password.startswith('pbkdf2_sha256$'):
-            self.set_password(self.password)
+
         super().save(*args, **kwargs)
 
     def __str__(self):

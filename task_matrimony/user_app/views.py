@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 
 from .serializers import CustomUserSerializer
 from .models import CustomUser
@@ -17,8 +17,8 @@ from subcription_app.models import SubcriptionsForUser, SubcriptionTable
 
 
 # Create your views here.
-
-class UserCrudOperation(APIView):
+class GetAllUserByAdmin(APIView):
+    permission_classes = [IsAdminUser]  
 
     def get(self, request):
         try:
@@ -36,6 +36,8 @@ class UserCrudOperation(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
+
+class UserCrudOperation(APIView):
 
     # POST: Create a new user
     def post(self, request):
@@ -66,7 +68,6 @@ class UserCrudOperation(APIView):
                     return Response({"error": "Invalid subscription plan"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 Notification_Table.objects.create(
-                    sender_id_id= user.user_id,
                     receiver_id_id=user.user_id,  # Notification for this user
                     notification_type="",
                     notification_message=f"🎉 Your subscription plan '{subscription_plan}' is officially activated! 💍 Get ready to meet your perfect match! 💖 You've got {subscription_plan.subcription_duration} days of adventure ahead. Enjoy every moment! 😘",
@@ -77,17 +78,7 @@ class UserCrudOperation(APIView):
 
 
     
-            # Query all existing users except the newly created user
-            all_users = CustomUser.objects.exclude(user_id=user.user_id)
-            # Create a notification for all other users
-            for existing_user in all_users:
-                Notification_Table.objects.create(
-                    sender_id_id= user.user_id,
-                    receiver_id_id=existing_user.user_id,  # Notification for this user
-                    notification_type="riminder",
-                    notification_message=f"A new user found! '{user.username}' has joined the platform.",
-                    is_read=False)
-                
+               
                 
             return Response({  
                 "user": serializer.data,
@@ -101,22 +92,22 @@ class UserCrudOperation(APIView):
 class UserCrudOperationByID(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, user_id):
+    def get(self, request):
 
         try:
-            if request.user.user_id != user_id:
-                return Response({"error": "You are not authorized to view this user's information."}, status=status.HTTP_403_FORBIDDEN)
-        
-            user = CustomUser.objects.get(user_id=user_id)
+            current_user = request.user.user_id
+            
+            user = CustomUser.objects.get(user_id=current_user)
             serializer = CustomUserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    def put(self, request, user_id):
+    def put(self, request):
         try:
+            current_user = request.user.user_id
             # Fetch the user
-            user = CustomUser.objects.get(user_id=user_id)
+            user = CustomUser.objects.get(user_id=current_user)
             serializer = CustomUserSerializer(user, data=request.data)
             
             if serializer.is_valid():
@@ -159,7 +150,6 @@ class UserCrudOperationByID(APIView):
 
                         # Create a notification for the user
                         Notification_Table.objects.create(
-                            sender_id_id=user.user_id,
                             receiver_id_id=user.user_id,  # Notification for this user
                             notification_type="subscription",
                             notification_message=notification_message,
@@ -191,7 +181,7 @@ class UserCrudOperationByID(APIView):
 
 # View for login (creates token)
 class LoginView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         username = request.data.get('username')
@@ -208,11 +198,11 @@ class LoginView(APIView):
 
 # View for logout (delete token)
 class LogoutView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
             request.user.auth_token.delete()
-            return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+            return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
         except (AttributeError, KeyError):
-            return Response({"detail": "No active session to logout."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "No active session to logout."}, status=status.HTTP_400_BAD_REQUEST)

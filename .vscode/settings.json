@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./task_matrimony/task_matrimony"
+    ]
+}

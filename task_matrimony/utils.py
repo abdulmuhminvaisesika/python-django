@@ -83,8 +83,7 @@ def calculate_matching_score(user1_preferences, user2_profile):
     ('profession', 'profession'),
     ('education', 'education'),
     ('location', 'location'),
-    ('language', 'language'),
-    ('marital_status', 'marital_status')
+    ('language', 'language')
     ]
 
     for user1_field, user2_field in multi_option_fields:
@@ -99,10 +98,20 @@ def calculate_matching_score(user1_preferences, user2_profile):
                     score += 2  # Low priority for multi-option match
                     print(">>>>>>>>>>>", value)
                     print(">>>>>>>>>>>", score)
+    # Special handling for marital_status
+    user1_marital_status = getattr(user1_preferences, 'marital_status', None)  # List of strings
+    user2_marital_status = getattr(user2_profile, 'marital_status', None)  # Single string
+
+    if user1_marital_status and user2_marital_status:
+        if user2_marital_status in user1_marital_status:  # Check if profile status is in the preference list
+            score += 2
+            print(f">>>>>>>>>>> Matched marital status '{user2_marital_status}': +2 points")
+        else:
+            print(f">>>>>>>>>>> No match for marital status '{user2_marital_status}' in preferences: {user1_marital_status}")
+                    
+            
                 
-        
-            
-            
+                
 
 
     # Range-based Fields (Age, Height, Weight, Income)

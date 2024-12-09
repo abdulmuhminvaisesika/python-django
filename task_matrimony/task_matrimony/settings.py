@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'message_app',
     'maching_app',
     'common_maching_app'
+
 ]
 
 MIDDLEWARE = [
@@ -149,3 +150,7 @@ AUTH_USER_MODEL = 'user_app.CustomUser'
 # Media settings
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
+

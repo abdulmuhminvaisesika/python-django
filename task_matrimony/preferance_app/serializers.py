@@ -4,11 +4,13 @@ from .models import Preference
 from utils import validate_common_matching  # Import the utility function
 
 class PreferenceSerializer(serializers.ModelSerializer):
-    created_on= serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S",required=False)
-    updated_on= serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", required=False)
     class Meta:
         model = Preference
-        fields = '__all__'
+        fields = [
+        'user', 'age_range', 'income_range', 'height_range', 'weight_range',
+        'gender', 'religion', 'caste', 'profession', 'education', 'location',
+        'language', 'marital_status'
+        ]
         read_only_fields = ['user']
 
     def validate(self, attrs):

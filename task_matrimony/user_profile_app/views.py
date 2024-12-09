@@ -1,12 +1,12 @@
 from django.shortcuts import get_object_or_404
 
-
+from rest_framework.exceptions import NotFound
 from rest_framework.exceptions import PermissionDenied
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,IsAdminUser
 
 
 from .models import User_Profile_Table
@@ -24,7 +24,7 @@ class UserProfileListCreateView(APIView):
     """
     List all user profiles or create a new profile.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get(self, request, *args, **kwargs):
         """
@@ -34,6 +34,11 @@ class UserProfileListCreateView(APIView):
         serializer = UserProfileSerializer(profiles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class ProfileCreateView(APIView):
+    """
+    Create a new user profile.
+    """
+    permission_classes = [permissions.IsAuthenticated]
     def post(self, request, *args, **kwargs):
         """
         Create a new profile and associate the user with it.
@@ -60,17 +65,13 @@ class UserProfileListCreateView(APIView):
 
             # Iterate over preferences and calculate the matching score
             for user_preference in preferences:
-                print(">>>>>>>>", user_preference)
-                print(">>>>>>>>", profile)
                 # Calculate matching score between the new profile and existing user preferences
                 score = calculate_matching_score(user_preference, profile)
-                print(">>>>>>>>", score)
 
                 # If score is above 0, send a notification
                 if score > 0:
                     # Send a notification to the user with the matching score
                     Notification_Table.objects.create(
-                        sender_id_id=user_profile.user_id,  # The sender is the user who created the profile
                         receiver_id_id=user_preference.user.user_id,  # Notification for this user
                         notification_type="profile",
                         notification_message=f"A new match found! '{request.user.username}' has joined the platform with a matching score of {score}%",
@@ -95,11 +96,14 @@ class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         """
-        Fetch the specific user profile object associated with the user_id, 
-        and ensure the authenticated user has permission to access it.
+        Fetch the specific user profile object associated with the authenticated user.
         """
-        user_id = self.kwargs.get('user_id')
-        return get_user_object_or_permission_denied(user_id, User_Profile_Table, self.request.user)
+        current_user = self.request.user 
+        if current_user is None:
+            raise NotFound("User not found")
+        
+        # Assuming you're fetching the profile for the currently authenticated user:
+        return User_Profile_Table.objects.get(user=current_user)
 
     def perform_update(self, serializer):
         """

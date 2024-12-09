@@ -48,6 +48,7 @@ class SubcriptionsForUser(models.Model):
                 self.subcription_ending_at = self.subcription_started_at + timedelta(
                     days=self.subcription_duration
                 )
+                
 
         super().save(*args, **kwargs)
 

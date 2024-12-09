@@ -14,6 +14,7 @@ class Notification_Table(models.Model):
         ('rejected', 'Rejected'),
         ('accepted', 'Accepted'),
         ('request', 'Request'),
+        ('bulk', 'Bulk')
     )
     notification_id = models.AutoField(primary_key=True)
     notification_type = models.CharField(
@@ -22,7 +23,6 @@ class Notification_Table(models.Model):
         default='new_message'
     )
     notification_message = models.TextField()
-    sender_id = models.ForeignKey('user_app.CustomUser', related_name='notification_sender', on_delete=models.CASCADE)
     receiver_id = models.ForeignKey('user_app.CustomUser', related_name='notification_receiver', on_delete=models.CASCADE)
     notification_date = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
